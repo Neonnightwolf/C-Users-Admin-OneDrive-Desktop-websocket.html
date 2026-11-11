@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f5f1">
+  <title>Socket Desk</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+    :root {
+      color-scheme: light;
+      --paper: #f4f5f1;
+      --panel: #ffffff;
+      --ink: #1d2823;
+      --muted: #78827c;
+      --line: #e3e8e2;
+      --green: #237a52;
+      --green-soft: #e6f3eb;
+      --red: #bd4d3e;
+      --red-soft: #fbefec;
+      --amber: #a56a16;
+      --amber-soft: #fbf3e5;
+      --mono: 'DM Mono', 'SFMono-Regular', Consolas, monospace;
+      --sans: 'DM Sans', 'Segoe UI', sans-serif;
+      --display: 'Manrope', 'Segoe UI', sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: linear-gradient(rgba(42, 84, 60, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(42, 84, 60, .035) 1px, transparent 1px);
+      background-size: 28px 28px;
+      font-family: var(--sans);
+    }
+
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 3px solid rgba(35, 122, 82, .25);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(18px, 5vw, 72px);
+      border-bottom: 1px solid rgba(29, 40, 35, .1);
+      background: rgba(255, 255, 255, .76);
+      backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-family: var(--display); font-size: 15px; font-weight: 800; }
+    .brand-mark { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px; color: white; background: var(--green); }
+    .brand-mark svg { width: 17px; height: 17px; }
+    .top-meta { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+    .browser-dot { width: 7px; height: 7px; border-radius: 50%; background: #71a981; }
+
+    main { width: min(1190px, calc(100% - 40px)); margin: 0 auto; padding: 44px 0 56px; }
+    .page-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 27px; animation: rise-in .45s ease both; }
+    .eyebrow { margin: 0 0 8px; color: var(--green); font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-family: var(--display); font-size: clamp(26px, 4vw, 36px); line-height: 1.15; font-weight: 700; }
+    .heading-note { max-width: 290px; margin: 0 0 3px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+    .workspace { display: grid; grid-template-columns: 310px minmax(0, 1fr); min-height: 590px; overflow: hidden; border: 1px solid #dfe5df; border-radius: 10px; background: var(--panel); box-shadow: 0 20px 55px rgba(30, 55, 39, .07); animation: rise-in .55s .08s ease both; }
+    .sidebar { padding: 23px 20px; border-right: 1px solid var(--line); background: rgba(250, 251, 249, .85); }
+    .section-label { display: flex; align-items: center; justify-content: space-between; margin: 0 0 11px; color: #536159; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .field-label { display: block; margin: 0 0 7px; color: #546159; font-size: 12px; font-weight: 600; }
+    .endpoint-wrap { position: relative; }
+    .endpoint-prefix { position: absolute; top: 50%; left: 12px; width: 16px; height: 16px; color: #89958e; transform: translateY(-50%); pointer-events: none; }
+    .endpoint-input { width: 100%; height: 42px; padding: 0 10px 0 36px; border: 1px solid #dce3dc; border-radius: 6px; color: var(--ink); background: white; font-family: var(--mono); font-size: 11px; }
+    .endpoint-input::placeholder { color: #9aa39d; }
+    .connect-button { width: 100%; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 11px; border: 0; border-radius: 6px; color: white; background: var(--green); font-size: 13px; font-weight: 700; transition: background .16s ease, transform .16s ease; }
+    .connect-button:hover:not(:disabled) { background: #1b6543; transform: translateY(-1px); }
+    .connect-button:disabled { cursor: not-allowed; opacity: .48; }
+    .connect-button svg { width: 15px; height: 15px; }
+    .sidebar-divider { height: 1px; margin: 24px 0 20px; background: var(--line); }
+    .connection-row { display: flex; align-items: center; justify-content: space-between; min-height: 32px; color: #65716a; font-size: 12px; }
+    .state-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 4px; color: #68756c; background: #edf0ed; font-family: var(--mono); font-size: 10px; }
+    .state-chip::before { width: 6px; height: 6px; border-radius: 50%; background: #a0aaa3; content: ''; }
+    .state-chip.open { color: var(--green); background: var(--green-soft); }
+    .state-chip.open::before { background: var(--green); box-shadow: 0 0 0 3px rgba(35, 122, 82, .12); }
+    .state-chip.connecting { color: var(--amber); background: var(--amber-soft); }
+    .state-chip.connecting::before { background: #c58a2a; animation: pulse 1s infinite; }
+    .state-chip.closed { color: var(--red); background: var(--red-soft); }
+    .state-chip.closed::before { background: var(--red); }
+    .connection-value { color: #344139; font-family: var(--mono); font-size: 11px; }
+    .sidebar-foot { margin-top: 32px; padding: 12px; border: 1px solid #e6ebe5; border-radius: 6px; color: #727d76; background: white; font-size: 11px; line-height: 1.55; }
+    .sidebar-foot strong { display: block; margin-bottom: 3px; color: #47564c; font-weight: 700; }
+
+    .console { min-width: 0; display: flex; flex-direction: column; }
+    .console-head { min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 0 21px; border-bottom: 1px solid var(--line); }
+    .console-title { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; }
+    .console-title svg { width: 17px; height: 17px; color: #64736a; }
+    .console-actions { display: flex; align-items: center; gap: 12px; }
+    .autoscroll { display: flex; align-items: center; gap: 6px; color: #68756d; font-size: 11px; white-space: nowrap; }
+    .autoscroll input { accent-color: var(--green); }
+    .icon-button { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 5px; color: #718078; background: transparent; }
+    .icon-button:hover { border-color: var(--line); color: var(--ink); background: #f7f9f6; }
+    .icon-button svg { width: 15px; height: 15px; }
+
+    .event-list { min-height: 280px; flex: 1; overflow: auto; padding: 16px 21px; background-color: #fcfdfb; background-image: linear-gradient(rgba(61, 93, 72, .025) 1px, transparent 1px); background-size: 100% 30px; }
+    .empty-state { min-height: 245px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .empty-icon { width: 44px; height: 44px; display: grid; place-items: center; margin-bottom: 12px; border: 1px solid #e3e9e3; border-radius: 12px; color: #6a8b75; background: #f4f8f3; }
+    .empty-icon svg { width: 21px; height: 21px; }
+    .empty-state strong { color: #344239; font-family: var(--display); font-size: 13px; }
+    .empty-state span { max-width: 245px; margin-top: 6px; color: #87918a; font-size: 11px; line-height: 1.5; }
+    .event { display: grid; grid-template-columns: 66px 72px minmax(0, 1fr); gap: 10px; align-items: start; padding: 9px 0; border-bottom: 1px solid rgba(226, 232, 225, .75); animation: row-in .2s ease both; }
+    .event-time { padding-top: 3px; color: #99a39b; font-family: var(--mono); font-size: 10px; }
+    .event-type { justify-self: start; padding: 3px 6px; border-radius: 3px; color: #637067; background: #eef1ed; font-family: var(--mono); font-size: 9px; text-transform: uppercase; }
+    .event-type.sent { color: #286d91; background: #e9f3f8; }
+    .event-type.received { color: var(--green); background: var(--green-soft); }
+    .event-type.error { color: var(--red); background: var(--red-soft); }
+    .event-type.system { color: #8b641e; background: #fbf3e3; }
+    .event-content { min-width: 0; color: #39463d; font-family: var(--mono); font-size: 11px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .event-content.muted { color: #78847b; font-family: var(--sans); }
+
+    .composer { padding: 15px 20px 17px; border-top: 1px solid var(--line); background: white; }
+    .composer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .composer-label { color: #536159; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .keyboard-hint { color: #a0a9a2; font-family: var(--mono); font-size: 9px; }
+    .composer-row { display: flex; align-items: stretch; gap: 9px; }
+    .message-input { width: 100%; min-height: 72px; max-height: 160px; resize: vertical; padding: 11px 12px; border: 1px solid #dfe5df; border-radius: 6px; color: var(--ink); background: #fbfcfa; font-family: var(--mono); font-size: 11px; line-height: 1.5; }
+    .message-input::placeholder { color: #a1aaa3; }
+    .send-button { min-width: 88px; align-self: stretch; display: flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 6px; color: white; background: #263a2e; font-size: 12px; font-weight: 700; transition: background .16s ease, opacity .16s ease; }
+    .send-button:hover:not(:disabled) { background: #17281e; }
+    .send-button:disabled { cursor: not-allowed; opacity: .35; }
+    .send-button svg { width: 14px; height: 14px; }
+    .footer-note { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: #9aa39c; font-family: var(--mono); font-size: 9px; }
+    .footer-note strong { color: #748077; font-weight: 500; }
+
+    @keyframes rise-in { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes row-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 50% { opacity: .35; } }
+    @media (max-width: 760px) {
+      main { width: min(100% - 24px, 560px); padding-top: 29px; }
+      .page-heading { align-items: start; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+      .heading-note { max-width: 440px; }
+      .workspace { grid-template-columns: 1fr; }
+      .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+      .sidebar-foot { margin-top: 20px; }
+      .event-list { min-height: 245px; }
+    }
+    @media (max-width: 440px) {
+      .topbar { height: 58px; padding: 0 15px; }
+      main { width: calc(100% - 20px); padding-top: 23px; }
+      .top-meta { font-size: 10px; }
+      .console-head { padding: 0 13px; }
+      .console-actions { gap: 5px; }
+      .event-list { padding: 13px 12px; }
+      .event { grid-template-columns: 52px 63px minmax(0, 1fr); gap: 6px; }
+      .event-time { font-size: 9px; }
+      .event-content { font-size: 10px; }
+      .composer { padding: 13px 12px 14px; }
+      .send-button { min-width: 68px; }
+      .keyboard-hint { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M4 12h16M4 17h10"/><circle cx="17" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r="2" fill="currentColor" stroke="none"/></svg></span>
+      <span>socket desk</span>
+    </div>
+    <div class="top-meta"><span class="browser-dot"></span><span>Browser-native WebSocket</span></div>
+  </header>
+
+  <main>
+    <section class="page-heading" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Connection workspace / 01</p>
+        <h1 id="page-title">WebSocket console</h1>
+      </div>
+      <p class="heading-note">Open a socket, exchange messages, and inspect the live event stream.</p>
+    </section>
+
+    <section class="workspace" aria-label="WebSocket client">
+      <aside class="sidebar">
+        <p class="section-label">Connection</p>
+        <label class="field-label" for="endpoint">Server endpoint</label>
+        <div class="endpoint-wrap">
+          <svg class="endpoint-prefix" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+          <input class="endpoint-input" id="endpoint" type="url" spellcheck="false" autocomplete="url" value="wss://echo.websocket.events" aria-describedby="endpoint-help">
+        </div>
+        <button class="connect-button" id="connect-button" type="button">
+          <svg id="connect-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>
+          <span id="connect-label">Connect</span>
+        </button>
+        <span id="endpoint-help" hidden>Use a ws:// or wss:// endpoint.</span>
+
+        <div class="sidebar-divider"></div>
+        <p class="section-label">Session</p>
+        <div class="connection-row"><span>Status</span><span class="state-chip" id="state-chip" role="status">Disconnected</span></div>
+        <div class="connection-row"><span>Uptime</span><span class="connection-value" id="uptime">--:--</span></div>
+        <div class="connection-row"><span>Messages</span><span class="connection-value" id="message-count">0</span></div>
+        <div class="sidebar-foot"><strong>Connection stays in your browser</strong>Messages go directly from this page to the endpoint you enter. Only connect to servers you trust.</div>
+      </aside>
+
+      <div class="console">
+        <div class="console-head">
+          <div class="console-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9l2 2-2 2M13 13h3"/></svg><span>Event stream</span></div>
+          <div class="console-actions">
+            <label class="autoscroll"><input type="checkbox" id="autoscroll" checked> Auto-scroll</label>
+            <button class="icon-button" id="clear-button" type="button" title="Clear event stream" aria-label="Clear event stream"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg></button>
+          </div>
+        </div>
+        <div class="event-list" id="event-list" role="log" aria-live="polite" aria-relevant="additions text">
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 8h10M7 12h6M7 16h10"/><path d="M4 4h16v16H4z"/></svg></div>
+            <strong>Nothing in the stream yet</strong>
+            <span>Connect to an endpoint to see connection events and messages here.</span>
+          </div>
+        </div>
+        <form class="composer" id="message-form">
+          <div class="composer-head"><label class="composer-label" for="message">Message payload</label><span class="keyboard-hint">Ctrl + Enter to send</span></div>
+          <div class="composer-row">
+            <textarea class="message-input" id="message" placeholder="Type a message..." spellcheck="false" aria-label="Message payload"></textarea>
+            <button class="send-button" id="send-button" type="submit" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg><span>Send</span></button>
+          </div>
+          <div class="footer-note"><span>Text frame</span><span><strong id="payload-size">0</strong> characters</span></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const endpointInput = document.getElementById('endpoint');
+      const connectButton = document.getElementById('connect-button');
+      const connectLabel = document.getElementById('connect-label');
+      const connectIcon = document.getElementById('connect-icon');
+      const stateChip = document.getElementById('state-chip');
+      const uptimeLabel = document.getElementById('uptime');
+      const messageCount = document.getElementById('message-count');
+      const eventList = document.getElementById('event-list');
+      const emptyState = document.getElementById('empty-state');
+      const messageInput = document.getElementById('message');
+      const sendButton = document.getElementById('send-button');
+      const payloadSize = document.getElementById('payload-size');
+      const autoscroll = document.getElementById('autoscroll');
+      let socket = null;
+      let connectedAt = 0;
+      let uptimeTimer = null;
+      let sent = 0;
+      let received = 0;
+
+      try {
+        const savedEndpoint = localStorage.getItem('socket-desk-endpoint');
+        if (savedEndpoint) endpointInput.value = savedEndpoint;
+      } catch (_) {
+        // Storage can be unavailable in private or restricted browsing contexts.
+      }
+
+      const clock = () => new Date().toLocaleTimeString([], { hour12: false });
+
+      function setState(state, label) {
+        stateChip.className = `state-chip ${state}`.trim();
+        stateChip.textContent = label;
+        const isActive = state === 'open' || state === 'connecting';
+        connectButton.disabled = state === 'connecting';
+        connectLabel.textContent = state === 'connecting' ? 'Connecting...' : state === 'open' ? 'Disconnect' : 'Connect';
+        connectIcon.innerHTML = state === 'connecting'
+          ? '<path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.64 5.64l2.12 2.12m8.48 8.48 2.12 2.12m0-12.72-2.12 2.12m-8.48 8.48-2.12 2.12"/>'
+          : state === 'open'
+            ? '<path d="m6 6 12 12M18 6 6 18"/>'
+            : '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>';
+        sendButton.disabled = state !== 'open';
+        endpointInput.disabled = isActive;
+      }
+
+      function addEvent(type, content, muted = false) {
+        emptyState.hidden = true;
+        const row = document.createElement('div');
+        row.className = 'event';
+        const time = document.createElement('time');
+        time.className = 'event-time';
+        time.textContent = clock();
+        const badge = document.createElement('span');
+        badge.className = `event-type ${type}`;
+        badge.textContent = type;
+        const body = document.createElement('div');
+        body.className = `event-content${muted ? ' muted' : ''}`;
+        body.textContent = content;
+        row.append(time, badge, body);
+        eventList.append(row);
+        while (eventList.querySelectorAll('.event').length > 250) {
+          eventList.querySelector('.event')?.remove();
+        }
+        if (autoscroll.checked) eventList.scrollTop = eventList.scrollHeight;
+      }
+
+      function updateUptime() {
+        if (!connectedAt) {
+          uptimeLabel.textContent = '--:--';
+          return;
+        }
+        const seconds = Math.floor((Date.now() - connectedAt) / 1000);
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainder = seconds % 60;
+        uptimeLabel.textContent = hours
+          ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
+          : `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+      }
+
+      function connect() {
+        const address = endpointInput.value.trim();
+        let parsed;
+        try {
+          parsed = new URL(address);
+        } catch (_) {
+          addEvent('error', 'Enter a valid WebSocket URL, such as wss://example.com/socket.', true);
+          endpointInput.focus();
+          return;
+        }
+        if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
+          addEvent('error', 'The endpoint must use ws:// or wss://.', true);
+          endpointInput.focus();
+          return;
+        }
+
+        try { localStorage.setItem('socket-desk-endpoint', address); } catch (_) { /* Optional preference. */ }
+        setState('connecting', 'Connecting');
+        addEvent('system', `Connecting to ${address}`, true);
+
+        let current;
+        try {
+          current = new WebSocket(address);
+        } catch (error) {
+          setState('', 'Disconnected');
+          addEvent('error', `Could not create connection: ${error.message}`, true);
+          return;
+        }
+        socket = current;
+        current.addEventListener('open', () => {
+          if (socket !== current) return;
+          connectedAt = Date.now();
+          sent = 0;
+          received = 0;
+          messageCount.textContent = '0';
+          setState('open', 'Connected');
+          addEvent('system', `Connected to ${address}`, true);
+          uptimeTimer = window.setInterval(updateUptime, 1000);
+          updateUptime();
+        });
+        current.addEventListener('message', (event) => {
+          if (socket !== current) return;
+          received += 1;
+          messageCount.textContent = `${sent} sent / ${received} received`;
+          if (typeof event.data === 'string') {
+            addEvent('received', event.data);
+          } else if (event.data instanceof Blob) {
+            addEvent('received', `[Binary data: ${event.data.size} bytes]`, true);
+          } else {
+            addEvent('received', '[Binary data received]', true);
+          }
+        });
+        current.addEventListener('error', () => {
+          if (socket === current) addEvent('error', 'A WebSocket error occurred. Check the endpoint and server logs.', true);
+        });
+        current.addEventListener('close', (event) => {
+          if (socket !== current) return;
+          socket = null;
+          connectedAt = 0;
+          window.clearInterval(uptimeTimer);
+          uptimeTimer = null;
+          updateUptime();
+          setState(event.wasClean ? '' : 'closed', 'Disconnected');
+          const reason = event.reason ? `: ${event.reason}` : '';
+          addEvent(event.wasClean ? 'system' : 'error', `Connection closed (code ${event.code}${reason})`, true);
+        });
+      }
+
+      connectButton.addEventListener('click', () => {
+        if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+          socket.close(1000, 'Disconnected by user');
+        } else {
+          connect();
+        }
+      });
+      endpointInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !connectButton.disabled) connect();
+      });
+      messageInput.addEventListener('input', () => {
+        payloadSize.textContent = String(messageInput.value.length);
+      });
+      messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          document.getElementById('message-form').requestSubmit();
+        }
+      });
+      document.getElementById('message-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!socket || socket.readyState !== WebSocket.OPEN) return;
+        const payload = messageInput.value;
+        try {
+          socket.send(payload);
+          sent += 1;
+          messageCount.textContent = `${sent} sent / ${received} received`;
+          addEvent('sent', payload || '[Empty message]');
+          messageInput.value = '';
+          payloadSize.textContent = '0';
+          messageInput.focus();
+        } catch (error) {
+          addEvent('error', `Send failed: ${error.message}`, true);
+        }
+      });
+      document.getElementById('clear-button').addEventListener('click', () => {
+        eventList.querySelectorAll('.event').forEach((row) => row.remove());
+        emptyState.hidden = false;
+      });
+      window.addEventListener('beforeunload', () => {
+        if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+          socket.close(1000, 'Page closed');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
